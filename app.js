@@ -12,8 +12,8 @@ var openstack;
 var mcu_list = {};
 
 var options = {
-    flavor : 'm1.medium',
-    image : 'joinMCU_Cluster'
+    flavor : 'm1.large',   //m1.medium,  m1.large
+    image : 'MCU_v0.9'
 };
 
 app.get('/mcu/:uuid', function(req, res){
@@ -31,7 +31,9 @@ app.get('/mcu/:uuid', function(req, res){
 
         }, 5000); //ip가 할당되지 않은 경우 대기
     }else{
+        console.log(mcu_list[uuid].ip + ' issued!');
         res.send(mcu_list[uuid].ip);
+        //delete mcu_list[uuid];
     }
 });
 
@@ -160,7 +162,7 @@ function createInstance(uuid, flavor, image, webserverIP){
 
     openstack.createServer({
         name: 'MCU_' + uuid,
-        hostname: 'fucker',
+        hostname: 'MCU_' + uuid,
         image: image,
         flavor: flavor,
         cloudConfig :  Buffer( makeUserData(uuid, webserverIP, port) ).toString('base64'),
@@ -242,10 +244,13 @@ function attachFloatingIp (server, ip) {
 function makeUserData(uuid, webserverIp, port){
     return  '#!/bin/sh \n'+
         'MCUIP=`curl -X GET '+ webserverIp + ':' + port + '/mcu/' + uuid+'`\n'+
-        'echo "config.erizoController.publicIP=\''+"$"+"{MCUIP}"+'\'" >> /home/ncl/licode/licode_config.js \n'+
-        'echo "config.erizoAgent.publicIP=\''+"$"+"{MCUIP}"+'\'" >> /home/ncl/licode/licode_config.js \n'+
-        'cd /home/ncl/licode/scripts/\n'+
-        './initLicode.sh';
+        'echo "config.erizoController.publicIP=\''+"$"+"{MCUIP}"+'\'" >> /home/ubuntu/licode/licode_config.js\n'+
+        'echo "config.erizoAgent.publicIP=\''+"$"+"{MCUIP}"+'\'" >> /home/ubuntu/licode/licode_config.js\n'+
+        'cd /home/ubuntu/licode/scripts/\n'+
+        'sudo ./initLicode.sh \n'+
+        'sleep 5 \n'+
+        'sudo ./initBasicExample.sh\n'+
+        'exit 0';
 }
 
 
